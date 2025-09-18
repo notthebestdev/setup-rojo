@@ -1,0 +1,61 @@
+name: "Setup Rojo"
+description: "Installs Rojo CLI for Roblox projects"
+author: "notthebestdev"
+branding:
+  icon: "package"
+  color: "blue"
+
+inputs:
+  version:
+    description: "Rojo version to install (default: latest)"
+    required: false
+    default: "latest"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Detect platform
+      id: platform
+      shell: bash
+      run: |
+        UNAME=$(uname -s)
+        ARCH=$(uname -m)
+
+        if [[ "$UNAME" == "Linux" && "$ARCH" == "x86_64" ]]; then
+          echo "asset=linux-x86_64" >> $GITHUB_OUTPUT
+        elif [[ "$UNAME" == "Darwin" && "$ARCH" == "arm64" ]]; then
+          echo "asset=macos-aarch64" >> $GITHUB_OUTPUT
+        elif [[ "$UNAME" == "Darwin" && "$ARCH" == "x86_64" ]]; then
+          echo "asset=macos-x86_64" >> $GITHUB_OUTPUT
+        elif [[ "$UNAME" == "MINGW"* || "$UNAME" == "MSYS"* || "$UNAME" == "CYGWIN"* ]]; then
+          echo "asset=windows-x86_64" >> $GITHUB_OUTPUT
+        else
+          echo "Unsupported platform: $UNAME $ARCH"
+          exit 1
+        fi
+
+    - name: Get Rojo version
+      id: get-version
+      shell: bash
+      run: |
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          VERSION=$(curl -s https://api.github.com/repos/rojo-rbx/rojo/releases/latest | grep "tag_name" | cut -d '"' -f4)
+        else
+          VERSION=${{ inputs.version }}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Download Rojo
+      shell: bash
+      run: |
+        VERSION=${{ steps.get-version.outputs.version }}
+        ASSET=${{ steps.platform.outputs.asset }}
+
+        echo "Installing Rojo $VERSION for $ASSET..."
+        curl -L "https://github.com/rojo-rbx/rojo/releases/download/$VERSION/rojo-${VERSION#v}-$ASSET.zip" -o rojo.zip
+
+        mkdir -p ~/.rojo
+        unzip -o rojo.zip -d ~/.rojo
+
+        # Add to PATH
+        echo "$HOME/.rojo" >> $GITHUB_PATH

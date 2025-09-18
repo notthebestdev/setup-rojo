@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag version (e.g. v1.0.0)"
+        required: true
+        type: string
+      latest:
+        description: "Update moving tag (e.g. v1)"
+        required: false
+        default: "true"
+        type: boolean
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
+
+          if [ "${{ github.event.inputs.latest }}" = "true" ]; then
+            MAJOR=$(echo "${{ github.event.inputs.version }}" | grep -oP '^v[0-9]+')
+            git tag -f $MAJOR
+            git push origin -f $MAJOR
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          generate_release_notes: true

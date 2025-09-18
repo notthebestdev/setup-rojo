@@ -13,6 +13,8 @@ on:
         default: "true"
         type: boolean
 
+permissions: write-all
+
 jobs:
   release:
     name: Create Release

@@ -3,7 +3,7 @@ description: "Installs Rojo CLI for Roblox projects"
 author: "notthebestdev"
 branding:
   icon: "package"
-  color: "blue"
+  color: "red"
 
 inputs:
   version:
